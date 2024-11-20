@@ -1,0 +1,61 @@
+services:
+  web: # Este es el servicio principal, la app que verás funcionando
+    build: 
+      context: . # Usa la carpeta actual donde está este archivo
+      dockerfile: Dockerfile 
+    ports:
+      - "3000:3000" # Conecta el puerto 3000 del contenedor con el puerto 3000 de tu computadora
+    depends_on: # Antes de que esta app arranque, necesita que estos servicios estén listos:
+      - mysql 
+      - redis  
+      - node 
+    environment: # Configuración de la app usando variables (como contraseñas y nombres)
+      MYSQL_HOST: mysql 
+      MYSQL_USER: root 
+      MYSQL_PASSWORD: example 
+      MYSQL_DATABASE: mydatabase 
+      REDIS_HOST: redis # Le dice que Redis está en el servicio "redis"
+    networks:
+      - app_network # Todos estos servicios estarán conectados en la misma red
+
+  mysql: # Este es el servicio de la base de datos MySQL
+    image: mysql:8.0 # Usa la imagen oficial de MySQL versión 8.0
+    container_name: mysql # Le pone un nombre al contenedor para identificarlo más fácil
+    ports:
+      - "3306:3306" # Conecta el puerto 3306 del contenedor con tu computadora (así puedes acceder a la base de datos)
+    environment: # Configuración de MySQL
+      MYSQL_ROOT_PASSWORD: example 
+      MYSQL_DATABASE: mydatabase 
+    volumes:
+      - mysql_data:/var/lib/mysql # Guarda los datos de la base de datos en tu computadora para no perderlos
+    networks:
+      - app_network # Conecta MySQL a la misma red que la app
+
+  redis: # Este es el servicio de Redis, como una memoria rápida para la app
+    image: redis:7 # Usa la imagen oficial de Redis versión 7
+    container_name: redis # Nombre del contenedor Redis
+    ports:
+      - "6379:6379" # Conecta el puerto 6379 del contenedor con tu computadora
+    volumes:
+      - redis_data:/data # Guarda los datos de Redis en tu compu para que no se pierdan
+    networks:
+      - app_network # Redis también se conecta a la red de la app
+
+  node: # Este servicio corre el backend usando Node.js
+    image: node:18 # Usa la imagen oficial de Node.js versión 18
+    container_name: node 
+    working_dir: /usr/src/app # Es como el "escritorio" donde trabajará dentro del contenedor
+    volumes:
+      - .:/usr/src/app # Monta toda la carpeta actual dentro del contenedor
+    ports:
+      - "4000:4000" # Conecta el puerto 4000 del contenedor con tu computadora
+    command: ["npm", "start"] # Este comando arranca la app con Node.js
+    networks:
+      - app_network # Se conecta a la misma red que todo lo demás
+
+volumes:
+  mysql_data: # Datos de la base de datos MySQL
+  redis_data: # Datos que Redis guarda
+
+networks: # Red para que todos los servicios se puedan hablar
+  app_network: # Esta red se llama "app_network"
